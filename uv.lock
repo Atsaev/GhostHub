@@ -127,6 +127,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
+    { name = "greenlet" },
     { name = "jinja2" },
     { name = "litestar-granian" },
     { name = "pydantic-settings" },
@@ -137,6 +138,7 @@ dependencies = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.18.5" },
     { name = "asyncpg", specifier = ">=0.31.0" },
+    { name = "greenlet", specifier = ">=3.5.4" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "litestar-granian", specifier = ">=0.15.0" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },
