@@ -7,7 +7,22 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
 
 # Environments
 .env
+
+# runtime
+storage/
+
+# tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# logs
+*.log
+logs/
+
+# OS
+.DS_Store
