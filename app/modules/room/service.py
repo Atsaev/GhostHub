@@ -1,10 +1,11 @@
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import select
 
+from app.common.datetime import utc_now
 from app.core.config import settings
 from app.database.session import async_session_factory
-from app.modules.room.models import Room, utc_now
+from app.modules.room.models import Room
 
 
 async def create_room(public_token: str) -> Room:
@@ -13,7 +14,9 @@ async def create_room(public_token: str) -> Room:
     room = Room(
         public_token=public_token,
         created_at=now,
-        expires_at=now + timedelta(seconds=settings.room_ttl_seconds),
+        expires_at=now + timedelta(
+            seconds=settings.room_ttl_seconds,
+        ),
     )
     async with async_session_factory() as session:
         session.add(room)
@@ -27,7 +30,7 @@ async def get_room(public_token: str) -> Room | None:
         result = await session.execute(
             select(Room).where(
                 Room.public_token == public_token,
-                Room.expires_at > datetime.now(UTC),
+                Room.expires_at > utc_now(),
             )
         )
 
