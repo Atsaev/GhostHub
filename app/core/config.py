@@ -16,12 +16,21 @@ class Settings(BaseSettings):
 
     room_ttl_seconds: int = 3600
     room_max_devices: int = 5
+    room_max_bytes: int = 150 * 1024 * 1024
+    room_cleanup_interval_seconds: int = 60
+
+    # секрет для подписи cookie доступа к комнатам
+    secret_key: str = "dev-secret-change-me"
+
+    # абсолютный базовый url для ссылок и qr-кодов (если приложение за прокси)
+    public_base_url: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
 
 # тянем из env с pydantic-settings
 settings = Settings()  # type: ignore
