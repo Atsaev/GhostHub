@@ -1,9 +1,19 @@
+import shutil
 from datetime import timedelta
+from pathlib import Path
+from uuid import uuid4
 
 from app.common.datetime import utc_now
+from app.common.storage import buffer_path
+from app.core.config import settings
 from app.database.session import async_session_factory
 from app.modules.room.models import Room
-from app.modules.room.service import cleanup_expired_rooms, create_room, get_room_any
+from app.modules.room.service import (
+    cleanup_expired_rooms,
+    cleanup_orphan_files,
+    create_room,
+    get_room_any,
+)
 
 
 def test_index_page(client):
@@ -49,9 +59,55 @@ async def test_cleanup_deletes_expired_room():
     room = await create_room(token, password=None)
     async with async_session_factory() as session:
         room = await session.get(Room, room.id)
+        assert room is not None
         room.expires_at = utc_now() - timedelta(seconds=1)
         await session.commit()
 
     tokens = await cleanup_expired_rooms()
     assert tokens == [token]
     assert await get_room_any(token) is None
+
+
+async def test_cleanup_orphan_files():
+    storage_root = Path(settings.storage_path)
+    if storage_root.is_dir():
+        shutil.rmtree(storage_root)
+
+    room = await create_room("gggggggggggggggg")
+    orphan = buffer_path(room.id, uuid4())
+    orphan.parent.mkdir(parents=True, exist_ok=True)
+    orphan.write_bytes(b"orphan data")
+
+    removed = await cleanup_orphan_files()
+
+    assert removed == 1
+    assert not orphan.exists()
+
+
+def test_create_room_rate_limit(client):
+    from app.common import rate_limit
+
+    rate_limit.room_creation_limiter.limit = 2
+    rate_limit.room_creation_limiter._events.clear()
+
+    assert client.post("/rooms", data={}, follow_redirects=False).status_code == 303
+    assert client.post("/rooms", data={}, follow_redirects=False).status_code == 303
+    assert client.post("/rooms", data={}, follow_redirects=False).status_code == 429
+
+
+def test_join_attempt_rate_limit(client):
+    from app.common import rate_limit
+
+    rate_limit.room_creation_limiter.limit = 20
+    rate_limit.room_creation_limiter._events.clear()
+    rate_limit.join_attempt_limiter.limit = 2
+    rate_limit.join_attempt_limiter._events.clear()
+
+    response = client.post("/rooms", data={"password": "secret"}, follow_redirects=False)
+    room_path = response.headers["location"]
+
+    client.post(f"{room_path}/join", data={"password": "wrong"}, follow_redirects=False)
+    client.post(f"{room_path}/join", data={"password": "wrong"}, follow_redirects=False)
+    response = client.post(f"{room_path}/join", data={"password": "wrong"}, follow_redirects=False)
+
+    assert "Слишком много попыток" in response.text

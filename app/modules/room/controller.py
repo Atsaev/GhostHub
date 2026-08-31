@@ -16,6 +16,7 @@ from qrcode.image.svg import SvgImage
 
 from app.common.datetime import utc_now
 from app.common.device import device_color, device_icon
+from app.common.rate_limit import join_attempt_limiter, room_creation_limiter
 from app.common.security import sign_room_token, verify_password, verify_room_token
 from app.core.config import settings
 from app.core.hub import hub
@@ -46,8 +47,17 @@ async def index_endpoint() -> Template:
 
 @post("/rooms", name="create_room")
 async def create_room_endpoint(
+    request: Request,
     data: Annotated[CreateRoomForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
-) -> Redirect:
+) -> Response:
+    if not room_creation_limiter.allow(_client_ip(request)):
+        return Template(
+            template_name="index.html",
+            context={
+                "error": "Слишком много комнат создаётся с этого адреса, попробуйте позже",
+            },
+            status_code=429,
+        )
     public_token = secrets.token_urlsafe(12)[:16]
     room = await create_room(public_token, password=data.password or None)
     return Redirect(f"/rooms/{room.public_token}", status_code=303)
@@ -101,6 +111,15 @@ async def room_join(
     if room.password_hash is None:
         return Redirect(f"/rooms/{public_token}", status_code=303)
     if not verify_password(data.password, room.password_hash):
+        if not join_attempt_limiter.allow(_client_ip(request)):
+            context = {
+                "room": room,
+                "room_url": _room_url(request, public_token),
+                "password_protected": True,
+                "locked": True,
+                "error": "Слишком много попыток входа, попробуйте позже",
+            }
+            return _room_template(request, public_token, context)
         context = {
             "room": room,
             "room_url": _room_url(request, public_token),
@@ -172,6 +191,13 @@ def _room_url(request: Request, public_token: str) -> str:
     else:
         base = str(request.base_url).rstrip("/")
     return f"{base}/rooms/{public_token}"
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 def _room_authenticated(request: Request, room: Room) -> bool:

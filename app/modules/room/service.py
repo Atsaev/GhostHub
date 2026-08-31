@@ -1,4 +1,6 @@
+import shutil
 from datetime import UTC, timedelta
+from pathlib import Path
 from uuid import UUID
 
 from sqlalchemy import delete, func, select
@@ -67,6 +69,47 @@ async def cleanup_expired_rooms() -> list[str]:
     for room in rooms:
         await delete_room(room.id)
     return [room.public_token for room in rooms]
+
+
+async def cleanup_orphan_files() -> int:
+    """Удаляет файлы без записей в БД (после падений при загрузке)."""
+    removed = 0
+    storage_root = Path(settings.storage_path)
+    if not storage_root.is_dir():
+        return 0
+
+    async with async_session_factory() as session:
+        for room_dir in storage_root.iterdir():
+            room_id = _parse_uuid(room_dir.name)
+            if room_id is None or not room_dir.is_dir():
+                shutil.rmtree(room_dir, ignore_errors=True)
+                removed += 1
+                continue
+            room = await session.get(Room, room_id)
+            if room is None:
+                shutil.rmtree(room_dir, ignore_errors=True)
+                removed += 1
+                continue
+            for file_path in room_dir.iterdir():
+                if not file_path.is_file():
+                    continue
+                buffer_id = _parse_uuid(file_path.name)
+                if buffer_id is None:
+                    file_path.unlink(missing_ok=True)
+                    removed += 1
+                    continue
+                buffer = await session.get(Buffer, buffer_id)
+                if buffer is None or buffer.room_id != room.id:
+                    file_path.unlink(missing_ok=True)
+                    removed += 1
+    return removed
+
+
+def _parse_uuid(value: str) -> UUID | None:
+    try:
+        return UUID(value)
+    except ValueError:
+        return None
 
 
 async def room_storage_bytes(room_id: UUID) -> int:

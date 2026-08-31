@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     room_max_bytes: int = 150 * 1024 * 1024
     room_cleanup_interval_seconds: int = 60
 
+    # rate-limit
+    rate_limit_create_rooms: int = 20
+    rate_limit_create_window_seconds: int = 3600
+    rate_limit_join_attempts: int = 10
+    rate_limit_join_window_seconds: int = 900
+
     # секрет для подписи cookie доступа к комнатам
     secret_key: str = "dev-secret-change-me"
 

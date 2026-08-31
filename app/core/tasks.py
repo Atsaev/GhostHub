@@ -5,7 +5,7 @@ from litestar import Litestar
 
 from app.core.config import settings
 from app.core.hub import hub
-from app.modules.room.service import cleanup_expired_rooms
+from app.modules.room.service import cleanup_expired_rooms, cleanup_orphan_files
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,13 @@ async def _cleanup_loop() -> None:
             expired_tokens = await cleanup_expired_rooms()
             for token in expired_tokens:
                 await hub.publish(token, "expired", "")
+            orphans = await cleanup_orphan_files()
+            if expired_tokens or orphans:
+                logger.info(
+                    "очистка: комнат %d, осиротевших файлов %d",
+                    len(expired_tokens),
+                    orphans,
+                )
         except asyncio.CancelledError:
             raise
         except Exception:
