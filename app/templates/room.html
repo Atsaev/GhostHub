@@ -52,11 +52,15 @@
   <form id="composer" class="composer" hx-post="/rooms/{{ token }}/messages"
         hx-encoding="multipart/form-data" hx-target="#toast" hx-swap="innerHTML"
         hx-on::after-request="this.reset()">
-    <input type="text" name="content" placeholder="Сообщение или файл..." autocomplete="off">
-    <label class="btn ghost file-btn" for="file-input" title="Прикрепить файл">📎</label>
-    <input id="file-input" type="file" name="file" hidden>
+    <input type="text" name="content" placeholder="Сообщение..." autocomplete="off">
     <button class="btn" type="submit">Отправить</button>
   </form>
+
+  <div id="dropzone" class="dropzone" data-token="{{ token }}">
+    <input id="file-input" type="file" multiple hidden>
+    <div class="dz-hint">Перетащите файлы сюда или <span class="dz-pick" id="pick-files">выберите</span> — можно несколько</div>
+    <div id="upload-queue" class="upload-queue"></div>
+  </div>
   <div id="toast"></div>
 </main>
 {% endif %}

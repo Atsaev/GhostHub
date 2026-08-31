@@ -166,6 +166,46 @@ input:focus { outline: 2px solid var(--accent); }
 .composer input[type="text"] { flex: 1; }
 .file-btn { padding: 8px 12px; font-size: 1rem; }
 
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  color: var(--muted);
+  font-size: .9rem;
+  transition: border-color .2s, background .2s;
+}
+.dropzone.dragover {
+  border-color: var(--accent);
+  background: rgba(124, 92, 255, .08);
+}
+.dz-pick {
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.upload-queue { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; text-align: left; }
+.upload-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: .85rem;
+}
+.upload-item .upload-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upload-item .upload-size { color: var(--muted); }
+.upload-item .upload-status { color: var(--muted); white-space: nowrap; }
+.upload-item.done .upload-status { color: var(--ok); }
+.upload-item.error .upload-status { color: var(--danger); }
+
 .toast-error {
   background: rgba(248, 113, 113, .12);
   border: 1px solid var(--danger);
