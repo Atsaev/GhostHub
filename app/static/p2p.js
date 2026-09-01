@@ -18,10 +18,15 @@
   let pendingOffer = null;
 
   function sendSignal(to, kind, data) {
-    const form = new FormData();
-    form.append("to", to);
-    form.append("data", data);
-    return fetch(`/rooms/${token}/rtc/${kind}`, { method: "POST", body: form }).then(
+    // urlencoded — сервер ожидает application/x-www-form-urlencoded
+    const params = new URLSearchParams();
+    params.append("to", to);
+    params.append("data", data);
+    return fetch(`/rooms/${token}/rtc/${kind}`, {
+      method: "POST",
+      body: params,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    }).then(
       (response) => {
         if (!response.ok && kind === "offer") {
           const peer = peers.get(to);
@@ -42,10 +47,14 @@
   }
 
   function sendAccept(to, accept) {
-    const form = new FormData();
-    form.append("to", to);
-    form.append("accept", accept ? "true" : "false");
-    return fetch(`/rooms/${token}/rtc/accept`, { method: "POST", body: form });
+    const params = new URLSearchParams();
+    params.append("to", to);
+    params.append("accept", accept ? "true" : "false");
+    return fetch(`/rooms/${token}/rtc/accept`, {
+      method: "POST",
+      body: params,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
   }
 
   // ---------- сигналы с сервера ----------
