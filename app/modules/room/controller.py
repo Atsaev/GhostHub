@@ -244,7 +244,10 @@ async def rtc_signal(
     await hub.publish(
         public_token,
         f"rtc-{kind}",
-        json.dumps({"from": sender, "data": data.data}, ensure_ascii=False),
+        json.dumps(
+            {"from": sender, "to": data.to, "data": data.data},
+            ensure_ascii=False,
+        ),
     )
     return response
 

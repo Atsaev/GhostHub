@@ -73,6 +73,7 @@ def test_rtc_signal_published_to_hub(client):
         assert event == "rtc-offer"
         msg = json.loads(data)
         assert msg["data"] == "fake-sdp"
+        assert msg["to"] == "abcdef0123456789"
         assert msg["from"]
     finally:
         asyncio.run(hub.unsubscribe(token, queue))

@@ -47,7 +47,8 @@
 
   function handleSignal(name, msg) {
     if (name === "rtc-offer") {
-      if (msg.from === selfId) return;
+      // модалку видит только адресат (в комнате могут быть и другие устройства)
+      if (msg.from === selfId || (msg.to && msg.to !== selfId)) return;
       showAcceptModal(msg);
     } else if (name === "rtc-answer") {
       const peer = peers.get(msg.from);
@@ -89,6 +90,7 @@
     modal.classList.add("hidden");
     if (!pendingOffer) return;
     const from = pendingOffer.from;
+    const sdp = pendingOffer.data;
     await sendAccept(from, true);
     pendingOffer = null;
 
@@ -114,7 +116,7 @@
       if (e.candidate) sendSignal(from, "ice", JSON.stringify(e.candidate));
     };
     try {
-      await pc.setRemoteDescription({ type: "offer", sdp: pendingOffer.data });
+      await pc.setRemoteDescription({ type: "offer", sdp });
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       await sendSignal(from, "answer", pc.localDescription.sdp);
