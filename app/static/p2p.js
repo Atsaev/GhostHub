@@ -31,13 +31,17 @@
     return fetch(`/rooms/${token}/rtc/accept`, { method: "POST", body: form });
   }
 
-  // ---------- сигналы с сервера (sse-расширение шлёт события sse:rtc-*) ----------
+  // ---------- сигналы с сервера ----------
+
+  // собственный EventSource для rtc-сигналов: не зависит от
+  // htmx-расширения и его селекторов обработки
+  const rtcSource = new EventSource(`/rooms/${token}/events`, { withCredentials: true });
 
   ["rtc-offer", "rtc-answer", "rtc-ice", "rtc-accept"].forEach((name) => {
-    rtcHook.addEventListener(`sse:${name}`, (event) => {
+    rtcSource.addEventListener(name, (event) => {
       let msg;
       try {
-        msg = JSON.parse(event.detail.data);
+        msg = JSON.parse(event.data);
       } catch (err) {
         return;
       }
@@ -274,11 +278,20 @@
         renderPanel();
       }
     };
-    xhr.onload = () =>
-      finishPeer(
-        peer,
-        xhr.status === 204 ? "✓ Отправлено через сервер" : "Ошибка загрузки",
-      );
+    xhr.onload = () => {
+      let message =
+        xhr.status === 204 ? "✓ Отправлено через сервер" : "Ошибка загрузки";
+      if (xhr.status !== 204 && xhr.status >= 400) {
+        try {
+          const doc = new DOMParser().parseFromString(xhr.responseText, "text/html");
+          const text = doc.body.textContent.trim();
+          if (text) message = text;
+        } catch (e) {
+          /* ignore */
+        }
+      }
+      finishPeer(peer, message);
+    };
     xhr.onerror = () => finishPeer(peer, "Сеть недоступна");
     xhr.send(form);
   }

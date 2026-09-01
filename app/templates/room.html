@@ -47,9 +47,7 @@
       {% include "partials/stats.html" %}
     </div>
     <div hx-trigger="sse:expired" hx-on::sse:expired="window.location.reload()"></div>
-    <div id="rtc-hook" data-token="{{ token }}" data-device-id="{{ device_id }}" data-stun="{{ stun_url }}"
-         sse-swap="none"
-         hx-trigger="sse:rtc-offer sse:rtc-answer sse:rtc-ice sse:rtc-accept"></div>
+    <div id="rtc-hook" data-token="{{ token }}" data-device-id="{{ device_id }}" data-stun="{{ stun_url }}"></div>
   </div>
 
   <form id="composer" class="composer" hx-post="/rooms/{{ token }}/messages"
