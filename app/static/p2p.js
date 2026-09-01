@@ -165,6 +165,7 @@
       received: 0,
       finished: false,
       remoteSet: false,
+      fallbackUsed: false,
     };
     peers.set(from, peer);
     const pc = new RTCPeerConnection({ iceServers: [{ urls: stunUrl }] });
@@ -174,8 +175,15 @@
       setupReceiverChannel(peer);
     };
     pc.onicecandidate = (e) => {
-      if (e.candidate) sendSignal(from, "ice", JSON.stringify(e.candidate));
+      if (e.candidate) {
+        console.log("[p2p] ice-кандидат получателя");
+        sendSignal(from, "ice", JSON.stringify(e.candidate));
+      }
     };
+    pc.oniceconnectionstatechange = () => {
+      console.log("[p2p] ice-состояние:", pc.iceConnectionState);
+    };
+
     try {
       await pc.setRemoteDescription({ type: "offer", sdp });
       peer.remoteSet = true;
@@ -222,11 +230,27 @@
       awaitingAnswer: true,
       finished: false,
       remoteSet: false,
+      fallbackUsed: false,
     };
     peers.set(remoteId, peer);
     pc.onicecandidate = (e) => {
-      if (e.candidate) sendSignal(remoteId, "ice", JSON.stringify(e.candidate));
+      if (e.candidate) {
+        console.log("[p2p] ice-кандидат отправителя");
+        sendSignal(remoteId, "ice", JSON.stringify(e.candidate));
+      }
     };
+    pc.oniceconnectionstatechange = () => {
+      console.log("[p2p] ice-состояние:", pc.iceConnectionState);
+      if (pc.iceConnectionState === "failed") {
+        finishPeer(
+          peer,
+          "P2P-соединение не установлено (NAT/сети). Отправьте через сервер",
+        );
+      }
+    };
+    pc.onicegatheringstatechange = () =>
+      console.log("[p2p] ice-gathering:", pc.iceGatheringState);
+
     dc.onopen = () => {
       console.log("[p2p] канал открыт с", remoteId.slice(0, 6));
       clearTimeout(peer.openTimer);
@@ -341,6 +365,7 @@
   function fallbackUpload(peer) {
     peer.status = "uploading";
     peer.message = "";
+    peer.fallbackUsed = true;
     renderPanel();
     const form = new FormData();
     form.append("content", "");
@@ -422,7 +447,7 @@
         : "";
 
     const fallback =
-      peer.role === "sender" && peer.status !== "closed"
+      peer.role === "sender" && !peer.fallbackUsed
         ? `<button class="btn ghost p2p-fallback" type="button" data-fallback="${peer.remote}">Отправить через сервер</button>`
         : "";
 
