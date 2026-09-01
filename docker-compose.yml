@@ -8,6 +8,12 @@ services:
       - ghosthub_data:/data
     expose:
       - "8000"
+    networks:
+      - app-network
 
 volumes:
   ghosthub_data:
+
+networks:
+  app-network:
+    external: true
