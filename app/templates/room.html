@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{% if expired %}Комната недоступна{% else %}Комната {{ token }}{% endif %}{% endblock %}
+{% block body %}
+{% if expired %}
+<main class="center">
+  <h1>Комната истекла или не существует</h1>
+  <p class="muted">Все сообщения и файлы удалены автоматически.</p>
+  <a class="btn" href="/">Создать новую комнату</a>
+</main>
+{% elif locked %}
+<main class="center">
+  <h1>🔒 Комната защищена паролем</h1>
+  {% if error %}<div class="toast-error">{{ error }}</div>{% endif %}
+  <form class="card" method="post" action="/rooms/{{ token }}/join">
+    <input type="password" name="password" placeholder="Пароль комнаты" required autofocus>
+    <button class="btn" type="submit">Войти</button>
+  </form>
+</main>
+{% else %}
+<main class="room">
+  <header class="room-header">
+    <div>
+      <h1>Комната</h1>
+      <code class="token">{{ token }}</code>
+      <div class="muted">
+        Вы: <span class="avatar mini" style="background: {{ device.color }}">{{ device.icon }}</span>
+        {% if password_protected %} · 🔒 защищена паролем{% endif %}
+        · истекает через {{ ttl_minutes }} мин
+      </div>
+    </div>
+    <div class="room-actions">
+      <button class="btn ghost" type="button" data-copy="{{ room_url }}" data-label="Копировать ссылку">Копировать ссылку</button>
+      <button class="btn ghost" type="button" data-toggle-qr>QR-код</button>
+    </div>
+  </header>
+
+  <div id="qr-panel" class="qr-panel hidden">
+    <img src="/rooms/{{ token }}/qr.svg" alt="QR-код комнаты" width="200" height="200">
+    <p class="muted break">{{ room_url }}</p>
+  </div>
+
+  <div id="room-stream" hx-ext="sse" sse-connect="/rooms/{{ token }}/events">
+    <section id="messages" class="messages" sse-swap="message">
+      {% include "partials/messages.html" %}
+    </section>
+    <div id="stats" class="stats" sse-swap="stats">
+      {% include "partials/stats.html" %}
+    </div>
+  </div>
+
+  <form id="composer" class="composer" hx-post="/rooms/{{ token }}/messages"
+        hx-encoding="multipart/form-data" hx-target="#toast" hx-swap="innerHTML"
+        hx-on::after-request="this.reset()">
+    <input type="text" name="content" placeholder="Сообщение или файл..." autocomplete="off">
+    <label class="btn ghost file-btn" for="file-input" title="Прикрепить файл">📎</label>
+    <input id="file-input" type="file" name="file" hidden>
+    <button class="btn" type="submit">Отправить</button>
+  </form>
+  <div id="toast"></div>
+</main>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="center">
+  <section class="hero">
+    <h1>👻 GhostHub</h1>
+    <p class="lead">Анонимная комната для быстрого обмена текстом и файлами между устройствами.</p>
+    <ul class="features">
+      <li>Откройте ссылку на телефоне — всё уже там</li>
+      <li>QR-код для входа со смартфона</li>
+      <li>Комната и файлы удаляются автоматически</li>
+      <li>Можно защитить комнату паролем</li>
+    </ul>
+  </section>
+  <form class="card" method="post" action="/rooms">
+    <label>Пароль комнаты <span class="muted">(необязательно)</span>
+      <input type="password" name="password" placeholder="Оставьте пустым, если не нужен">
+    </label>
+    <button class="btn" type="submit">Создать комнату</button>
+  </form>
+</main>
+{% endblock %}

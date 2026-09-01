@@ -1,0 +1,21 @@
+{% if messages %}
+  {% for m in messages %}
+  <div class="msg">
+    <span class="avatar" style="background: {{ m.color }}">{{ m.icon }}</span>
+    <div class="msg-body">
+      <div class="msg-meta"><span class="avatar mini" style="background: {{ m.color }}">{{ m.icon }}</span> {{ m.time_str }}</div>
+      {% if m.kind == "file" %}
+      <a class="file-card" href="{{ m.download_url }}">
+        <span class="file-icon">📎</span>
+        <span class="file-name">{{ m.file_name }}</span>
+        <span class="file-size">{{ m.file_size_str }}</span>
+      </a>
+      {% else %}
+      <div class="msg-text">{{ m.content }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty">Пока пусто — отправьте первое сообщение</div>
+{% endif %}

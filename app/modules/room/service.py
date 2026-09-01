@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import UTC, timedelta
 from uuid import UUID
 
 from sqlalchemy import delete, func, select
@@ -78,7 +78,8 @@ async def room_storage_bytes(room_id: UUID) -> int:
                 Buffer.kind == "file",
             )
         )
-        return int(result.scalar_one())
+        value = result.scalar_one()
+        return int(value) if value is not None else 0
 
 
 async def list_messages(room_id: UUID) -> list[Buffer]:
@@ -92,6 +93,9 @@ async def list_messages(room_id: UUID) -> list[Buffer]:
 
 
 def message_view(message: Buffer, token: str) -> dict:
+    created = message.created_at
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=UTC)
     return {
         "id": str(message.id),
         "kind": message.kind,
@@ -100,7 +104,7 @@ def message_view(message: Buffer, token: str) -> dict:
         "file_size_str": human_size(message.file_size) if message.file_size else "",
         "icon": device_icon(message.device_id),
         "color": device_color(message.device_id),
-        "time_str": message.created_at.astimezone().strftime("%H:%M"),
+        "time_str": created.astimezone().strftime("%H:%M"),
         "download_url": (
             f"/rooms/{token}/files/{message.id}" if message.kind == "file" else ""
         ),

@@ -4,7 +4,7 @@ from litestar.plugins.jinja import JinjaTemplateEngine
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
 
-template_engine = JinjaTemplateEngine(directory=str(TEMPLATES_DIR))
+template_engine = JinjaTemplateEngine(directory=TEMPLATES_DIR)
 template_engine.engine.autoescape = True
 
 
