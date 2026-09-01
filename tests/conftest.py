@@ -6,8 +6,8 @@ os.environ.setdefault("DATABASE_URL", f"sqlite+aiosqlite:///{_TMP}/test.db")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 os.environ.setdefault("STORAGE_PATH", f"{_TMP}/storage")
 
-import pytest  # noqa: E402
-from litestar.testing import TestClient  # noqa: E402
+import pytest
+from litestar.testing import TestClient
 
 
 @pytest.fixture(autouse=True)

@@ -1,10 +1,9 @@
+import asyncio
 import sys
 from logging.config import fileConfig
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-import asyncio
 
 from alembic import context
 from sqlalchemy import pool
@@ -12,8 +11,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config import settings
 from app.database.base import Base
-from app.modules.buffer.models import Buffer
-from app.modules.room.models import Room
+from app.modules.buffer.models import Buffer  # noqa: F401  # alembic autogenerate
+from app.modules.room.models import Room  # noqa: F401  # alembic autogenerate
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
