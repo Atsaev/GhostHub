@@ -1,14 +1,17 @@
 import io
 import secrets
 from collections.abc import AsyncIterator
+from typing import Annotated
 from uuid import uuid4
 
 import qrcode
-from qrcode.image.svg import SvgImage
 from litestar import Request, Response, get, post
+from litestar.enums import RequestEncodingType
 from litestar.exceptions import NotFoundException
-from litestar.params import Form
-from litestar.response import RedirectResponse, StreamingResponse, Template
+from litestar.params import Body, FromPath
+from litestar.response import Redirect, Stream, Template
+from pydantic import BaseModel
+from qrcode.image.svg import SvgImage
 
 from app.common.datetime import utc_now
 from app.common.device import device_color, device_icon
@@ -27,20 +30,30 @@ from app.modules.room.service import (
 )
 
 
+class CreateRoomForm(BaseModel):
+    password: str | None = None
+
+
+class JoinRoomForm(BaseModel):
+    password: str
+
+
 @get("/", name="index")
 async def index_endpoint() -> Template:
     return Template(template_name="index.html")
 
 
 @post("/rooms", name="create_room")
-async def create_room_endpoint(password: str | None = Form(None)) -> RedirectResponse:
+async def create_room_endpoint(
+    data: Annotated[CreateRoomForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+) -> Redirect:
     public_token = secrets.token_urlsafe(12)[:16]
-    room = await create_room(public_token, password=password or None)
-    return RedirectResponse(f"/rooms/{room.public_token}", status_code=303)
+    room = await create_room(public_token, password=data.password or None)
+    return Redirect(f"/rooms/{room.public_token}", status_code=303)
 
 
 @get("/rooms/{public_token:str}", name="room_page")
-async def room_page(request: Request, public_token: str) -> Template:
+async def room_page(request: Request, public_token: FromPath[str]) -> Template:
     room = await get_room_any(public_token)
     if room is None or room.expires_at <= utc_now():
         return _room_template(request, public_token, {"expired": True})
@@ -78,15 +91,15 @@ async def room_page(request: Request, public_token: str) -> Template:
 @post("/rooms/{public_token:str}/join", name="room_join")
 async def room_join(
     request: Request,
-    public_token: str,
-    password: str = Form(...),
+    public_token: FromPath[str],
+    data: Annotated[JoinRoomForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Response:
     room = await get_room_any(public_token)
     if room is None or room.expires_at <= utc_now():
         return _room_template(request, public_token, {"expired": True})
     if room.password_hash is None:
-        return RedirectResponse(f"/rooms/{public_token}", status_code=303)
-    if not verify_password(password, room.password_hash):
+        return Redirect(f"/rooms/{public_token}", status_code=303)
+    if not verify_password(data.password, room.password_hash):
         context = {
             "room": room,
             "room_url": _room_url(request, public_token),
@@ -96,7 +109,7 @@ async def room_join(
         }
         return _room_template(request, public_token, context)
 
-    response = RedirectResponse(f"/rooms/{public_token}", status_code=303)
+    response = Redirect(f"/rooms/{public_token}", status_code=303)
     response.set_cookie(
         f"room_pass_{public_token}",
         sign_room_token(public_token),
@@ -109,7 +122,7 @@ async def room_join(
 
 
 @get("/rooms/{public_token:str}/events", name="room_events")
-async def room_events(public_token: str) -> StreamingResponse:
+async def room_events(public_token: FromPath[str]) -> Stream:
     async def stream() -> AsyncIterator[str]:
         queue = await hub.subscribe(public_token)
         try:
@@ -120,7 +133,7 @@ async def room_events(public_token: str) -> StreamingResponse:
         finally:
             await hub.unsubscribe(public_token, queue)
 
-    return StreamingResponse(
+    return Stream(
         stream(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache"},
@@ -128,7 +141,7 @@ async def room_events(public_token: str) -> StreamingResponse:
 
 
 @get("/rooms/{public_token:str}/qr.svg", name="room_qr")
-async def room_qr(request: Request, public_token: str) -> Response:
+async def room_qr(request: Request, public_token: FromPath[str]) -> Response:
     room = await get_room(public_token)
     if room is None:
         raise NotFoundException("Комната не найдена или истекла")

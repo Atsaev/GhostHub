@@ -1,10 +1,13 @@
+from typing import Annotated
 from uuid import UUID, uuid4
 
 from litestar import Request, Response, get, post
 from litestar.datastructures import UploadFile
+from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException, NotFoundException
-from litestar.params import File, Form
-from litestar.response import FileResponse
+from litestar.params import Body, FromPath
+from litestar.response import File
+from pydantic import BaseModel, ConfigDict
 
 from app.common.security import verify_room_token
 from app.common.storage import BufferLimitError, buffer_path
@@ -19,12 +22,18 @@ from app.modules.room.models import Room
 from app.modules.room.service import get_room, publish_room_update
 
 
+class CreateMessageForm(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    content: str | None = None
+    file: UploadFile | None = None
+
+
 @post("/rooms/{public_token:str}/messages", name="room_messages_create")
 async def room_messages_create(
     request: Request,
-    public_token: str,
-    content: str | None = Form(None),
-    file: UploadFile | None = File(None),
+    public_token: FromPath[str],
+    data: Annotated[CreateMessageForm, Body(media_type=RequestEncodingType.MULTI_PART)],
 ) -> Response:
     room = await get_room(public_token)
     if room is None:
@@ -32,16 +41,16 @@ async def room_messages_create(
     if not _room_authenticated(request, room):
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
-    response = Response(status_code=204)
+    response = Response(content=b"", status_code=204)
     device_id = _get_or_set_device_id(request, response)
 
-    if file is not None and file.filename:
+    if data.file is not None and data.file.filename:
         try:
-            await create_file_message(room.id, device_id, file)
+            await create_file_message(room.id, device_id, data.file)
         except BufferLimitError as exc:
             return _toast_response(413, str(exc))
     else:
-        text = (content or "").strip()
+        text = (data.content or "").strip()
         if not text:
             return _toast_response(400, "Пустое сообщение")
         if len(text) > MAX_TEXT_LENGTH:
@@ -55,9 +64,9 @@ async def room_messages_create(
 @get("/rooms/{public_token:str}/files/{buffer_id:uuid}", name="room_file_download")
 async def room_file_download(
     request: Request,
-    public_token: str,
-    buffer_id: UUID,
-) -> FileResponse:
+    public_token: FromPath[str],
+    buffer_id: FromPath[UUID],
+) -> File:
     room = await get_room(public_token)
     if room is None:
         raise NotFoundException("Комната не найдена или истекла")
@@ -70,7 +79,7 @@ async def room_file_download(
     path = buffer_path(room.id, message.id)
     if not path.is_file():
         raise NotFoundException("Файл не найден")
-    return FileResponse(
+    return File(
         path=path,
         filename=message.file_name or "file",
         media_type=message.mime_type or "application/octet-stream",
