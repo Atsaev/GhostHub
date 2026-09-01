@@ -129,6 +129,7 @@
       progress: 0,
       chunks: [],
       received: 0,
+      finished: false,
     };
     peers.set(from, peer);
     const pc = new RTCPeerConnection({ iceServers: [{ urls: stunUrl }] });
@@ -182,18 +183,26 @@
       file,
       progress: 0,
       awaitingAnswer: true,
+      finished: false,
     };
     peers.set(remoteId, peer);
     pc.onicecandidate = (e) => {
       if (e.candidate) sendSignal(remoteId, "ice", JSON.stringify(e.candidate));
     };
     dc.onopen = () => {
+      console.log("[p2p] канал открыт с", remoteId.slice(0, 6));
       peer.status = "sending";
       renderPanel();
       sendFile(peer);
     };
-    dc.onclose = () => finishPeer(peer, "Соединение закрыто");
-    dc.onerror = () => finishPeer(peer, "Ошибка соединения");
+    dc.onclose = () => {
+      console.log("[p2p] канал закрыт с", remoteId.slice(0, 6));
+      finishPeer(peer, "Соединение закрыто");
+    };
+    dc.onerror = () => {
+      console.error("[p2p] ошибка канала с", remoteId.slice(0, 6));
+      finishPeer(peer, "Ошибка соединения");
+    };
     pc.createOffer()
       .then((offer) => pc.setLocalDescription(offer))
       .then(() => sendSignal(remoteId, "offer", pc.localDescription.sdp))
@@ -320,6 +329,8 @@
   // ---------- общее ----------
 
   function finishPeer(peer, message) {
+    if (peer.finished) return; // защита от повторного закрытия канала
+    peer.finished = true;
     clearTimeout(peer.acceptTimer);
     clearTimeout(peer.openTimer);
     try {
