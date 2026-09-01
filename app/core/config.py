@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # абсолютный базовый url для ссылок и qr-кодов (если приложение за прокси)
     public_base_url: str = ""
 
+    # stun-сервер для webrtc p2p
+    p2p_stun_url: str = "stun:stun.l.google.com:19302"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

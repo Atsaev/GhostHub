@@ -1,9 +1,11 @@
 {% if messages %}
   {% for m in messages %}
-  <div class="msg">
-    <span class="avatar" style="background: {{ m.color }}">{{ m.icon }}</span>
+  <div class="msg" data-device="{{ m.device_id }}">
+    <button class="avatar send-target" type="button" data-send-to="{{ m.device_id }}" title="Передать файл этому устройству" style="background: {{ m.color }}">{{ m.icon }}</button>
     <div class="msg-body">
-      <div class="msg-meta"><span class="avatar mini" style="background: {{ m.color }}">{{ m.icon }}</span> {{ m.time_str }}</div>
+      <div class="msg-meta"><span class="avatar mini" style="background: {{ m.color }}">{{ m.icon }}</span> {{ m.time_str }}
+        <button class="send-btn" type="button" data-send-to="{{ m.device_id }}" title="Передать файл этому устройству">📤</button>
+      </div>
       {% if m.kind == "file" %}
         {% if m.preview == "image" %}
         <a class="file-card file-card-image" href="{{ m.download_url }}" target="_blank" title="{{ m.file_name }}">

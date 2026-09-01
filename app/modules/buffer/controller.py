@@ -1,5 +1,5 @@
 from typing import Annotated
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from litestar import Request, Response, get, post
 from litestar.datastructures import UploadFile
@@ -9,6 +9,7 @@ from litestar.params import Body, FromPath
 from litestar.response import File
 from pydantic import BaseModel, ConfigDict
 
+from app.common.device import get_or_set_device_id
 from app.common.security import verify_room_token
 from app.common.storage import BufferLimitError, buffer_path
 from app.common.templating import render_fragment
@@ -42,7 +43,7 @@ async def room_messages_create(
         raise HTTPException(status_code=403, detail="Доступ запрещён")
 
     response = Response(content=b"", status_code=204)
-    device_id = _get_or_set_device_id(request, response)
+    device_id = get_or_set_device_id(request, response)
 
     if data.file is not None and data.file.filename:
         try:
@@ -99,18 +100,3 @@ def _room_authenticated(request: Request, room: Room) -> bool:
         return True
     signature = request.cookies.get(f"room_pass_{room.public_token}")
     return signature is not None and verify_room_token(room.public_token, signature)
-
-
-def _get_or_set_device_id(request: Request, response: Response) -> str:
-    device_id = request.cookies.get("device_id")
-    if device_id is None or len(device_id) != 32:
-        device_id = uuid4().hex
-        response.set_cookie(
-            "device_id",
-            device_id,
-            max_age=315_360_000,
-            path="/",
-            httponly=True,
-            samesite="lax",
-        )
-    return device_id

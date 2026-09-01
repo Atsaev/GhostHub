@@ -145,6 +145,7 @@ def message_view(message: Buffer, token: str) -> dict:
         "content": message.content,
         "file_name": message.file_name,
         "file_size_str": human_size(message.file_size) if message.file_size else "",
+        "device_id": message.device_id,
         "preview": _preview_type(message.mime_type) if message.kind == "file" else "",
         "icon": device_icon(message.device_id),
         "color": device_color(message.device_id),

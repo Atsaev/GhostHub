@@ -47,6 +47,8 @@
       {% include "partials/stats.html" %}
     </div>
     <div hx-trigger="sse:expired" hx-on::sse:expired="window.location.reload()"></div>
+    <div id="rtc-hook" data-token="{{ token }}" data-device-id="{{ device_id }}" data-stun="{{ stun_url }}"
+         hx-trigger="sse:rtc-offer sse:rtc-answer sse:rtc-ice sse:rtc-accept"></div>
   </div>
 
   <form id="composer" class="composer" hx-post="/rooms/{{ token }}/messages"
@@ -61,7 +63,19 @@
     <div class="dz-hint">Перетащите файлы сюда или <span class="dz-pick" id="pick-files">выберите</span> — можно несколько</div>
     <div id="upload-queue" class="upload-queue"></div>
   </div>
+  <div id="p2p-panel"></div>
+  <input id="p2p-file" type="file" hidden>
   <div id="toast"></div>
+
+  <div id="rtc-modal" class="rtc-modal hidden">
+    <div class="rtc-modal-box">
+      <div id="rtc-modal-text"></div>
+      <div class="rtc-modal-actions">
+        <button id="rtc-accept" class="btn" type="button">Принять</button>
+        <button id="rtc-decline" class="btn ghost" type="button">Отклонить</button>
+      </div>
+    </div>
+  </div>
 </main>
 {% endif %}
 {% endblock %}
