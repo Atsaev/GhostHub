@@ -253,6 +253,31 @@ button.avatar.send-target { cursor: pointer; border: none; }
   gap: 14px;
 }
 .rtc-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.rtc-modal-title { font-weight: 600; }
+
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.device-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: .9rem;
+}
+.device-item:hover { border-color: var(--accent); }
+.device-id { font-family: ui-monospace, Menlo, monospace; color: var(--muted); }
+.device-online { margin-left: auto; color: var(--ok); font-size: .8rem; }
+.device-empty { color: var(--muted); text-align: center; padding: 12px 0; }
 
 .stats { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
 .meter { flex: 1; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }

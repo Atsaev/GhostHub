@@ -79,32 +79,41 @@ def test_image_preview(client):
     assert "<img" in page.text
 
 
-def test_self_message_has_no_send_button(client):
-    import asyncio
-
-    from app.modules.buffer.service import create_text_message
-    from app.modules.room.service import get_room_any
-
+def test_page_has_p2p_button_and_no_per_message_buttons(client):
     room_path = _create_room(client)
-    token = room_path.rsplit("/", 1)[1]
-
     client.post(
         f"{room_path}/messages",
-        data={"content": "моё сообщение"},
+        data={"content": "привет"},
         files={"file": ("", b"", "text/plain")},
         follow_redirects=False,
     )
-
-    async def add_foreign_message():
-        room = await get_room_any(token)
-        assert room is not None
-        await create_text_message(room.id, "f" * 32, "чужое сообщение")
-
-    asyncio.run(add_foreign_message())
-
     page = client.get(room_path).text
-    # кнопка передачи (📤 + аватар) только у чужого сообщения
-    assert page.count("data-send-to") == 2
+    assert "data-send-to" not in page
+    assert 'id="p2p-btn"' in page
+    assert 'id="p2p-modal"' in page
+
+
+def test_devices_endpoint_lists_online_devices(client):
+    import asyncio
+
+    from app.core.hub import hub
+
+    response = client.post("/rooms", data={}, follow_redirects=False)
+    room_path = response.headers["location"]
+    token = room_path.rsplit("/", 1)[1]
+    client.get(room_path)
+
+    response = client.get(f"{room_path}/devices")
+    assert response.status_code == 200
+    assert response.json()["devices"] == []
+
+    foreign = "device-other-1234567890ab"
+    queue = asyncio.run(hub.subscribe(token, foreign))
+    try:
+        devices = client.get(f"{room_path}/devices").json()["devices"]
+        assert [d["id"] for d in devices] == [foreign]
+    finally:
+        asyncio.run(hub.unsubscribe(token, queue, foreign))
 
 
 def test_qr_code(client):

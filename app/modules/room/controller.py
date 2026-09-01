@@ -155,9 +155,11 @@ async def room_join(
 
 
 @get("/rooms/{public_token:str}/events", name="room_events")
-async def room_events(public_token: FromPath[str]) -> Stream:
+async def room_events(request: Request, public_token: FromPath[str]) -> Stream:
+    device_id = request.cookies.get("device_id")
+    queue = await hub.subscribe(public_token, device_id)
+
     async def stream() -> AsyncIterator[str]:
-        queue = await hub.subscribe(public_token)
         try:
             yield "retry: 3000\n\n"
             yield ": connected\n\n"
@@ -170,7 +172,7 @@ async def room_events(public_token: FromPath[str]) -> Stream:
                     continue
                 yield payload
         finally:
-            await hub.unsubscribe(public_token, queue)
+            await hub.unsubscribe(public_token, queue, device_id)
 
     return Stream(
         stream(),
@@ -180,6 +182,29 @@ async def room_events(public_token: FromPath[str]) -> Stream:
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@get("/rooms/{public_token:str}/devices", name="room_devices")
+async def room_devices(request: Request, public_token: FromPath[str]) -> dict:
+    """Список устройств, находящихся в комнате сейчас (без текущего)."""
+    room = await get_room(public_token)
+    if room is None:
+        raise NotFoundException("Комната не найдена или истекла")
+    if not _room_authenticated(request, room):
+        raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+    self_id = request.cookies.get("device_id")
+    devices = [
+        {
+            "id": device_id,
+            "icon": device_icon(device_id),
+            "color": device_color(device_id),
+            "short": device_id[:6],
+        }
+        for device_id in hub.online_devices(public_token)
+        if device_id and device_id != self_id
+    ]
+    return {"devices": devices}
 
 
 @get("/rooms/{public_token:str}/qr.svg", name="room_qr")

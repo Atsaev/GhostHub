@@ -55,6 +55,7 @@
         hx-encoding="multipart/form-data" hx-target="#toast" hx-swap="innerHTML"
         hx-on::after-request="this.reset()">
     <input type="text" name="content" placeholder="Сообщение..." autocomplete="off">
+    <button class="btn ghost" id="p2p-btn" type="button" title="Передать файл напрямую другому устройству">P2P</button>
     <button class="btn" type="submit">Отправить</button>
   </form>
 
@@ -73,6 +74,16 @@
       <div class="rtc-modal-actions">
         <button id="rtc-accept" class="btn" type="button">Принять</button>
         <button id="rtc-decline" class="btn ghost" type="button">Отклонить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="p2p-modal" class="rtc-modal hidden">
+    <div class="rtc-modal-box">
+      <div class="rtc-modal-title">Передать файл устройству</div>
+      <div id="p2p-devices" class="device-list"></div>
+      <div class="rtc-modal-actions">
+        <button id="p2p-close" class="btn ghost" type="button">Закрыть</button>
       </div>
     </div>
   </div>

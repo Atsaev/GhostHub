@@ -16,7 +16,6 @@
 
   const peers = new Map(); // remote device_id -> peer
   let pendingOffer = null;
-  let pendingTarget = null;
 
   function sendSignal(to, kind, data) {
     const form = new FormData();
@@ -357,50 +356,63 @@
     return div.innerHTML;
   }
 
-  // ---------- события ленты: клик/драг-н-дроп по устройству ----------
+  // ---------- выбор устройства и файла (кнопка P2P) ----------
 
-  const messagesEl = document.getElementById("messages");
+  const p2pBtn = document.getElementById("p2p-btn");
+  const p2pModal = document.getElementById("p2p-modal");
+  const p2pDevices = document.getElementById("p2p-devices");
+  let selectedDevice = null;
 
-  // скрываем кнопки передачи на собственных сообщениях
-  // (серверный рендер уже без них, но sse-фрагменты общие для всех;
-  // htmx:afterSwap при sse-свапе приходит без detail, поэтому без проверок)
-  function hideOwnTargets(root) {
-    root.querySelectorAll(".msg[data-device]").forEach((msg) => {
-      if (msg.dataset.device !== selfId) return;
-      msg.querySelectorAll("[data-send-to]").forEach((el) => el.classList.add("hidden"));
-    });
+  async function openDevicePicker() {
+    p2pDevices.innerHTML = '<div class="device-empty">Загрузка…</div>';
+    p2pModal.classList.remove("hidden");
+    let devices = [];
+    try {
+      const response = await fetch(`/rooms/${token}/devices`);
+      if (response.ok) {
+        devices = (await response.json()).devices || [];
+      }
+    } catch (err) {
+      /* ignore */
+    }
+    if (!devices.length) {
+      p2pDevices.innerHTML =
+        '<div class="device-empty">Нет других устройств в сети</div>';
+      return;
+    }
+    p2pDevices.innerHTML = devices
+      .map(
+        (device) => `
+          <button class="device-item" type="button" data-device="${device.id}">
+            <span class="avatar mini" style="background: ${device.color}">${device.icon}</span>
+            <span class="device-id">#${escapeHtml(device.short)}</span>
+            <span class="device-online">в сети</span>
+          </button>`,
+      )
+      .join("");
   }
-  hideOwnTargets(document);
-  document.addEventListener("htmx:afterSwap", () => hideOwnTargets(document));
 
-  messagesEl.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-send-to]");
-    if (!target) return;
-    pendingTarget = target.dataset.sendTo;
+  p2pBtn.addEventListener("click", openDevicePicker);
+
+  document.getElementById("p2p-close").addEventListener("click", () => {
+    p2pModal.classList.add("hidden");
+  });
+
+  p2pDevices.addEventListener("click", (event) => {
+    const item = event.target.closest("[data-device]");
+    if (!item) return;
+    selectedDevice = item.dataset.device;
+    p2pModal.classList.add("hidden");
     fileInput.value = "";
     fileInput.click();
   });
 
-  messagesEl.addEventListener("drop", (event) => {
-    const target = event.target.closest("[data-send-to]");
-    if (!target) return;
-    event.preventDefault();
-    const files = event.dataTransfer.files;
-    if (files.length) startTransfer(target.dataset.sendTo, files[0]);
-  });
-
-  messagesEl.addEventListener("dragover", (event) => {
-    if (event.target.closest("[data-send-to]")) {
-      event.preventDefault();
-    }
-  });
-
   fileInput.addEventListener("change", () => {
-    if (pendingTarget && fileInput.files.length) {
-      startTransfer(pendingTarget, fileInput.files[0]);
+    if (selectedDevice && fileInput.files.length) {
+      startTransfer(selectedDevice, fileInput.files[0]);
     }
     fileInput.value = "";
-    pendingTarget = null;
+    selectedDevice = null;
   });
 
   panel.addEventListener("click", (event) => {
