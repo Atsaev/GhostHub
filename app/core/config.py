@@ -5,16 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "GhostHub"
     debug: bool = False
-
-    # префикс пути при деплое за обратным прокси (например "/ghost");
-    # пустая строка — без префикса
     base_path: str = ""
-
-    # database_host: str
-    # database_port: int = 5432
-    # database_name: str
-    # database_user: str
-    # database_password: str
     database_url: str
 
     storage_path: str = "storage"

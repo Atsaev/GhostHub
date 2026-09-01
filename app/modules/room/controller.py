@@ -14,7 +14,7 @@ from litestar.response import Redirect, Stream, Template
 from pydantic import BaseModel
 from qrcode.image.svg import SvgImage
 
-from app.common.datetime import utc_now
+from app.common.datetime import ensure_aware, utc_now
 from app.common.device import device_color, device_icon
 from app.common.rate_limit import join_attempt_limiter, room_creation_limiter
 from app.common.security import sign_room_token, verify_password, verify_room_token
@@ -66,7 +66,7 @@ async def create_room_endpoint(
 @get("/rooms/{public_token:str}", name="room_page")
 async def room_page(request: Request, public_token: FromPath[str]) -> Template:
     room = await get_room_any(public_token)
-    if room is None or room.expires_at <= utc_now():
+    if room is None or ensure_aware(room.expires_at) <= utc_now():
         return _room_template(request, public_token, {"expired": True})
 
     context: dict = {
@@ -92,7 +92,7 @@ async def room_page(request: Request, public_token: FromPath[str]) -> Template:
             },
             "ttl_minutes": max(
                 0,
-                int((room.expires_at - utc_now()).total_seconds() // 60),
+                int((ensure_aware(room.expires_at) - utc_now()).total_seconds() // 60),
             ),
         }
     )
@@ -106,7 +106,7 @@ async def room_join(
     data: Annotated[JoinRoomForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
 ) -> Response:
     room = await get_room_any(public_token)
-    if room is None or room.expires_at <= utc_now():
+    if room is None or ensure_aware(room.expires_at) <= utc_now():
         return _room_template(request, public_token, {"expired": True})
     if room.password_hash is None:
         return Redirect(f"{settings.base_path}/rooms/{public_token}", status_code=303)

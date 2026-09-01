@@ -2,9 +2,12 @@ from datetime import UTC, datetime
 
 
 def utc_now() -> datetime:
-    """Текущее время UTC без tzinfo.
+    """Текущее время UTC (aware)."""
+    return datetime.now(UTC)
 
-    SQLite (aiosqlite) хранит и возвращает naive datetime,
-    поэтому для сравнений используем naive UTC.
-    """
-    return datetime.now(UTC).replace(tzinfo=None)
+
+def ensure_aware(value: datetime) -> datetime:
+    """Приводит naive datetime (sqlite) к aware UTC для сравнений."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value
