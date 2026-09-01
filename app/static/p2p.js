@@ -5,6 +5,7 @@
   const token = rtcHook.dataset.token;
   const selfId = rtcHook.dataset.deviceId;
   const stunUrl = rtcHook.dataset.stun;
+  const base = rtcHook.dataset.base || "";
   const panel = document.getElementById("p2p-panel");
   const fileInput = document.getElementById("p2p-file");
   const modal = document.getElementById("rtc-modal");
@@ -23,7 +24,7 @@
     const params = new URLSearchParams();
     params.append("to", to);
     params.append("data", data);
-    return fetch(`/rooms/${token}/rtc/${kind}`, {
+    return fetch(`${base}/rooms/${token}/rtc/${kind}`, {
       method: "POST",
       body: params,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -51,7 +52,7 @@
     const params = new URLSearchParams();
     params.append("to", to);
     params.append("accept", accept ? "true" : "false");
-    return fetch(`/rooms/${token}/rtc/accept`, {
+    return fetch(`${base}/rooms/${token}/rtc/accept`, {
       method: "POST",
       body: params,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -62,7 +63,7 @@
 
   // собственный EventSource для rtc-сигналов: не зависит от
   // htmx-расширения и его селекторов обработки
-  const rtcSource = new EventSource(`/rooms/${token}/events`, { withCredentials: true });
+  const rtcSource = new EventSource(`${base}/rooms/${token}/events`, { withCredentials: true });
   rtcSource.onopen = () => console.log("[p2p] rtc-канал открыт");
   rtcSource.onerror = () =>
     console.error("[p2p] ошибка rtc-канала, state:", rtcSource.readyState);
@@ -381,7 +382,7 @@
     form.append("content", "");
     form.append("file", peer.file, peer.file.name);
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `/rooms/${token}/messages`);
+    xhr.open("POST", `${base}/rooms/${token}/messages`);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
         peer.progress = Math.round((e.loaded / e.total) * 100);
@@ -510,7 +511,7 @@
     p2pModal.classList.remove("hidden");
     let devices = [];
     try {
-      const response = await fetch(`/rooms/${token}/devices`);
+      const response = await fetch(`${base}/rooms/${token}/devices`);
       if (response.ok) {
         devices = (await response.json()).devices || [];
       }

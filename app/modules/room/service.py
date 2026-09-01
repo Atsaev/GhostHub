@@ -151,7 +151,9 @@ def message_view(message: Buffer, token: str) -> dict:
         "color": device_color(message.device_id),
         "time_str": created.astimezone().strftime("%H:%M"),
         "download_url": (
-            f"/rooms/{token}/files/{message.id}" if message.kind == "file" else ""
+            f"{settings.base_path}/rooms/{token}/files/{message.id}"
+            if message.kind == "file"
+            else ""
         ),
     }
 

@@ -71,7 +71,7 @@ async def create_room_endpoint(
         )
     public_token = secrets.token_urlsafe(12)[:16]
     room = await create_room(public_token, password=data.password or None)
-    return Redirect(f"/rooms/{room.public_token}", status_code=303)
+    return Redirect(f"{settings.base_path}/rooms/{room.public_token}", status_code=303)
 
 
 @get("/rooms/{public_token:str}", name="room_page")
@@ -122,7 +122,7 @@ async def room_join(
     if room is None or room.expires_at <= utc_now():
         return _room_template(request, public_token, {"expired": True})
     if room.password_hash is None:
-        return Redirect(f"/rooms/{public_token}", status_code=303)
+        return Redirect(f"{settings.base_path}/rooms/{public_token}", status_code=303)
     if not verify_password(data.password, room.password_hash):
         if not join_attempt_limiter.allow(_client_ip(request)):
             context = {
@@ -142,7 +142,7 @@ async def room_join(
         }
         return _room_template(request, public_token, context)
 
-    response = Redirect(f"/rooms/{public_token}", status_code=303)
+    response = Redirect(f"{settings.base_path}/rooms/{public_token}", status_code=303)
     response.set_cookie(
         f"room_pass_{public_token}",
         sign_room_token(public_token),

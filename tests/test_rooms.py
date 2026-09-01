@@ -27,6 +27,28 @@ def test_device_id_cookie_matches_page(client):
     assert f'data-device-id="{cookie}"' in page.text
 
 
+def test_base_path_prefix(client, monkeypatch):
+    from app.common.templating import template_engine
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "base_path", "/ghost")
+    template_engine.engine.globals["base_path"] = "/ghost"
+    try:
+        response = client.post("/rooms", data={}, follow_redirects=False)
+        assert response.status_code == 303
+        room_path = response.headers["location"]
+        assert room_path.startswith("/ghost/rooms/")
+        token = room_path.rsplit("/", 1)[1]
+
+        # прямой доступ без префикса (префикс срезает обратный прокси)
+        page = client.get(f"/rooms/{token}").text
+        assert 'sse-connect="/ghost/rooms/' in page
+        assert "/ghost/static/style.css" in page
+        assert f"/ghost/rooms/{token}/qr.svg" in page
+    finally:
+        template_engine.engine.globals["base_path"] = ""
+
+
 def test_index_page(client):
     response = client.get("/")
     assert response.status_code == 200

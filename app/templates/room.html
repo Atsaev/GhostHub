@@ -5,13 +5,13 @@
 <main class="center">
   <h1>Комната истекла или не существует</h1>
   <p class="muted">Все сообщения и файлы удалены автоматически.</p>
-  <a class="btn" href="/">Создать новую комнату</a>
+  <a class="btn" href="{{ base_path }}/">Создать новую комнату</a>
 </main>
 {% elif locked %}
 <main class="center">
   <h1>🔒 Комната защищена паролем</h1>
   {% if error %}<div class="toast-error">{{ error }}</div>{% endif %}
-  <form class="card" method="post" action="/rooms/{{ token }}/join">
+  <form class="card" method="post" action="{{ base_path }}/rooms/{{ token }}/join">
     <input type="password" name="password" placeholder="Пароль комнаты" required autofocus>
     <button class="btn" type="submit">Войти</button>
   </form>
@@ -35,11 +35,11 @@
   </header>
 
   <div id="qr-panel" class="qr-panel hidden">
-    <img src="/rooms/{{ token }}/qr.svg" alt="QR-код комнаты" width="200" height="200">
+    <img src="{{ base_path }}/rooms/{{ token }}/qr.svg" alt="QR-код комнаты" width="200" height="200">
     <p class="muted break">{{ room_url }}</p>
   </div>
 
-  <div id="room-stream" hx-ext="sse" sse-connect="/rooms/{{ token }}/events">
+  <div id="room-stream" hx-ext="sse" sse-connect="{{ base_path }}/rooms/{{ token }}/events">
     <section id="messages" class="messages" sse-swap="message">
       {% include "partials/messages.html" %}
     </section>
@@ -47,10 +47,10 @@
       {% include "partials/stats.html" %}
     </div>
     <div hx-trigger="sse:expired" hx-on::sse:expired="window.location.reload()"></div>
-    <div id="rtc-hook" data-token="{{ token }}" data-device-id="{{ device_id }}" data-stun="{{ stun_url }}"></div>
+    <div id="rtc-hook" data-token="{{ token }}" data-device-id="{{ device_id }}" data-stun="{{ stun_url }}" data-base="{{ base_path }}"></div>
   </div>
 
-  <form id="composer" class="composer" hx-post="/rooms/{{ token }}/messages"
+  <form id="composer" class="composer" hx-post="{{ base_path }}/rooms/{{ token }}/messages"
         hx-encoding="multipart/form-data" hx-target="#toast" hx-swap="innerHTML"
         hx-on::after-request="this.reset()">
     <input type="text" name="content" placeholder="Сообщение..." autocomplete="off">
@@ -58,7 +58,7 @@
     <button class="btn" type="submit">Отправить</button>
   </form>
 
-  <div id="dropzone" class="dropzone" data-token="{{ token }}">
+  <div id="dropzone" class="dropzone" data-token="{{ token }}" data-base="{{ base_path }}">
     <input id="file-input" type="file" multiple hidden>
     <div class="dz-hint">Перетащите файлы сюда или <span class="dz-pick" id="pick-files">выберите</span> — можно несколько</div>
     <div id="upload-queue" class="upload-queue"></div>

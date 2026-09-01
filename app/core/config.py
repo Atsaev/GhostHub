@@ -1,9 +1,14 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
     app_name: str = "GhostHub"
     debug: bool = False
+
+    # префикс пути при деплое за обратным прокси (например "/ghost");
+    # пустая строка — без префикса
+    base_path: str = ""
 
     # database_host: str
     # database_port: int = 5432
@@ -39,6 +44,11 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @field_validator("base_path")
+    @classmethod
+    def _normalize_base_path(cls, value: str) -> str:
+        return value.rstrip("/")
 
 
 # тянем из env с pydantic-settings

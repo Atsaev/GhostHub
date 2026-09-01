@@ -12,7 +12,7 @@
     </ul>
   </section>
   {% if error %}<div class="toast-error">{{ error }}</div>{% endif %}
-  <form class="card" method="post" action="/rooms">
+  <form class="card" method="post" action="{{ base_path }}/rooms">
     <label>Пароль комнаты <span class="muted">(необязательно)</span>
       <input type="password" name="password" placeholder="Оставьте пустым, если не нужен">
     </label>

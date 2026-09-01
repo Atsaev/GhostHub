@@ -1,0 +1,13 @@
+services:
+  ghosthub:
+    build: .
+    container_name: ghosthub
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ghosthub_data:/data
+    expose:
+      - "8000"
+
+volumes:
+  ghosthub_data:

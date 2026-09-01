@@ -5,6 +5,7 @@
   const fileInput = document.getElementById("file-input");
   const queueEl = document.getElementById("upload-queue");
   const token = dropzone.dataset.token;
+  const base = dropzone.dataset.base || "";
 
   let files = [];
 
@@ -30,7 +31,7 @@
       form.append("content", "");
       form.append("file", item.file, item.file.name);
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", `/rooms/${token}/messages`);
+      xhr.open("POST", `${base}/rooms/${token}/messages`);
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           item.progress = Math.round((e.loaded / e.total) * 100);
