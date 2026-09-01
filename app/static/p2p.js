@@ -106,7 +106,10 @@
             }
           }, CONNECT_TIMEOUT);
         })
-        .catch(() => finishPeer(peer, "Ошибка соединения"));
+        .catch((err) => {
+          console.error("[p2p] ошибка приёма answer:", err.message);
+          finishPeer(peer, "Ошибка соединения");
+        });
     } else if (name === "rtc-ice") {
       let candidate;
       try {
@@ -195,6 +198,7 @@
       await pc.setLocalDescription(answer);
       await sendSignal(from, "answer", pc.localDescription.sdp);
     } catch (err) {
+      console.error("[p2p] ошибка приёма offer:", err.message);
       finishPeer(peer, "Ошибка соединения");
       return;
     }

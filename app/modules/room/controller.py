@@ -109,7 +109,7 @@ async def room_page(request: Request, public_token: FromPath[str]) -> Template:
             ),
         }
     )
-    return _room_template(request, public_token, context)
+    return _room_template(request, public_token, context, device_id=device_id)
 
 
 @post("/rooms/{public_token:str}/join", name="room_join")
@@ -297,7 +297,12 @@ def _room_authenticated(request: Request, room: Room) -> bool:
     return signature is not None and verify_room_token(room.public_token, signature)
 
 
-def _room_template(request: Request, public_token: str, context: dict) -> Template:
+def _room_template(
+    request: Request,
+    public_token: str,
+    context: dict,
+    device_id: str | None = None,
+) -> Template:
     response = Template(
         template_name="room.html",
         context={"token": public_token, **context},
@@ -305,7 +310,7 @@ def _room_template(request: Request, public_token: str, context: dict) -> Templa
     if request.cookies.get("device_id") is None:
         response.set_cookie(
             "device_id",
-            uuid4().hex,
+            device_id or uuid4().hex,
             max_age=315_360_000,
             path="/",
             httponly=True,

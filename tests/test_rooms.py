@@ -16,6 +16,17 @@ from app.modules.room.service import (
 )
 
 
+def test_device_id_cookie_matches_page(client):
+    response = client.post("/rooms", data={}, follow_redirects=False)
+    room_path = response.headers["location"]
+
+    page = client.get(room_path)
+    assert page.status_code == 200
+    cookie = client.cookies.get("device_id")
+    assert cookie
+    assert f'data-device-id="{cookie}"' in page.text
+
+
 def test_index_page(client):
     response = client.get("/")
     assert response.status_code == 200
