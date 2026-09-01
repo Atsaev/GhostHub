@@ -99,7 +99,10 @@
           // таймер открытия канала и у отправителя
           peer.openTimer = setTimeout(() => {
             if (!peer.dc || peer.dc.readyState !== "open") {
-              finishPeer(peer, "Не удалось установить соединение");
+              finishPeer(
+                peer,
+                "Не удалось установить соединение (сеть или mDNS). Отправьте через сервер",
+              );
             }
           }, CONNECT_TIMEOUT);
         })
@@ -197,7 +200,10 @@
     }
     peer.openTimer = setTimeout(() => {
       if (!peer.dc || peer.dc.readyState !== "open") {
-        finishPeer(peer, "Не удалось установить соединение");
+        finishPeer(
+          peer,
+          "Не удалось установить соединение (сеть или mDNS). Отправьте через сервер",
+        );
       }
     }, CONNECT_TIMEOUT);
     renderPanel();
