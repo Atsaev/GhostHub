@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from litestar import Litestar
+from litestar.datastructures import CacheControlHeader
 from litestar.static_files import create_static_files_router
 from litestar.template import TemplateConfig
 
@@ -27,7 +28,12 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 app = Litestar(
     route_handlers=[
-        create_static_files_router(path="/static", directories=[STATIC_DIR]),
+        create_static_files_router(
+            path="/static",
+            directories=[STATIC_DIR],
+            # без кеша: обновления js/css должны сразу попадать в браузер
+            cache_control=CacheControlHeader(max_age=0, no_cache=True),
+        ),
         index_endpoint,
         create_room_endpoint,
         room_page,

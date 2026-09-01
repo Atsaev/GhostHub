@@ -21,7 +21,24 @@
     const form = new FormData();
     form.append("to", to);
     form.append("data", data);
-    return fetch(`/rooms/${token}/rtc/${kind}`, { method: "POST", body: form });
+    return fetch(`/rooms/${token}/rtc/${kind}`, { method: "POST", body: form }).then(
+      (response) => {
+        if (!response.ok && kind === "offer") {
+          const peer = peers.get(to);
+          if (peer && peer.role === "sender") {
+            finishPeer(peer, `Предложение не отправлено (${response.status})`);
+          }
+        }
+        return response;
+      },
+      (err) => {
+        const peer = peers.get(to);
+        if (peer && peer.role === "sender") {
+          finishPeer(peer, "Сеть недоступна");
+        }
+        throw err;
+      },
+    );
   }
 
   function sendAccept(to, accept) {
@@ -36,6 +53,9 @@
   // собственный EventSource для rtc-сигналов: не зависит от
   // htmx-расширения и его селекторов обработки
   const rtcSource = new EventSource(`/rooms/${token}/events`, { withCredentials: true });
+  rtcSource.onopen = () => console.log("[p2p] rtc-канал открыт");
+  rtcSource.onerror = () =>
+    console.error("[p2p] ошибка rtc-канала, state:", rtcSource.readyState);
 
   ["rtc-offer", "rtc-answer", "rtc-ice", "rtc-accept"].forEach((name) => {
     rtcSource.addEventListener(name, (event) => {
@@ -45,6 +65,7 @@
       } catch (err) {
         return;
       }
+      console.log(`[p2p] получено ${name}`, msg);
       handleSignal(name, msg);
     });
   });
@@ -328,7 +349,7 @@
   function renderPeer(peer) {
     const label = peer.file ? escapeHtml(peer.file.name) : peer.remote.slice(0, 6);
     const status = {
-      awaiting: "ожидание согласия…",
+      awaiting: "предложение отправлено, ждём согласия…",
       connecting: "установка соединения…",
       sending: "",
       receiving: "",
