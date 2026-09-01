@@ -361,6 +361,21 @@
 
   const messagesEl = document.getElementById("messages");
 
+  // скрываем кнопки передачи на собственных сообщениях
+  // (серверный рендер уже без них, но sse-фрагменты общие для всех)
+  function hideOwnTargets(root) {
+    root.querySelectorAll(".msg[data-device]").forEach((msg) => {
+      if (msg.dataset.device !== selfId) return;
+      msg.querySelectorAll("[data-send-to]").forEach((el) => el.classList.add("hidden"));
+    });
+  }
+  hideOwnTargets(messagesEl);
+  document.addEventListener("htmx:afterSwap", (event) => {
+    if (event.detail && event.detail.target && event.detail.target.querySelectorAll) {
+      hideOwnTargets(event.detail.target);
+    }
+  });
+
   messagesEl.addEventListener("click", (event) => {
     const target = event.target.closest("[data-send-to]");
     if (!target) return;

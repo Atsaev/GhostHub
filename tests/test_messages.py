@@ -79,6 +79,34 @@ def test_image_preview(client):
     assert "<img" in page.text
 
 
+def test_self_message_has_no_send_button(client):
+    import asyncio
+
+    from app.modules.buffer.service import create_text_message
+    from app.modules.room.service import get_room_any
+
+    room_path = _create_room(client)
+    token = room_path.rsplit("/", 1)[1]
+
+    client.post(
+        f"{room_path}/messages",
+        data={"content": "моё сообщение"},
+        files={"file": ("", b"", "text/plain")},
+        follow_redirects=False,
+    )
+
+    async def add_foreign_message():
+        room = await get_room_any(token)
+        assert room is not None
+        await create_text_message(room.id, "f" * 32, "чужое сообщение")
+
+    asyncio.run(add_foreign_message())
+
+    page = client.get(room_path).text
+    # кнопка передачи (📤 + аватар) только у чужого сообщения
+    assert page.count("data-send-to") == 2
+
+
 def test_qr_code(client):
     room_path = _create_room(client)
     response = client.get(f"{room_path}/qr.svg")
