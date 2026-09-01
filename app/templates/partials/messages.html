@@ -5,11 +5,34 @@
     <div class="msg-body">
       <div class="msg-meta"><span class="avatar mini" style="background: {{ m.color }}">{{ m.icon }}</span> {{ m.time_str }}</div>
       {% if m.kind == "file" %}
-      <a class="file-card" href="{{ m.download_url }}">
-        <span class="file-icon">📎</span>
-        <span class="file-name">{{ m.file_name }}</span>
-        <span class="file-size">{{ m.file_size_str }}</span>
-      </a>
+        {% if m.preview == "image" %}
+        <a class="file-card file-card-image" href="{{ m.download_url }}" target="_blank" title="{{ m.file_name }}">
+          <img src="{{ m.download_url }}" alt="{{ m.file_name }}" loading="lazy">
+          <span class="file-card-meta">
+            <span class="file-name">{{ m.file_name }}</span>
+            <span class="file-size">{{ m.file_size_str }}</span>
+          </span>
+        </a>
+        {% elif m.preview in ("video", "audio") %}
+        <div class="file-media">
+          {% if m.preview == "video" %}
+          <video src="{{ m.download_url }}" controls preload="metadata"></video>
+          {% else %}
+          <audio src="{{ m.download_url }}" controls preload="metadata"></audio>
+          {% endif %}
+          <a class="file-card" href="{{ m.download_url }}">
+            <span class="file-icon">📎</span>
+            <span class="file-name">{{ m.file_name }}</span>
+            <span class="file-size">{{ m.file_size_str }}</span>
+          </a>
+        </div>
+        {% else %}
+        <a class="file-card" href="{{ m.download_url }}">
+          <span class="file-icon">📎</span>
+          <span class="file-name">{{ m.file_name }}</span>
+          <span class="file-size">{{ m.file_size_str }}</span>
+        </a>
+        {% endif %}
       {% else %}
       <div class="msg-text">{{ m.content }}</div>
       {% endif %}

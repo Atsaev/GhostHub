@@ -156,6 +156,28 @@ input:focus { outline: 2px solid var(--accent); }
 .file-name { word-break: break-all; }
 .file-size { color: var(--muted); font-size: 0.8rem; margin-left: auto; white-space: nowrap; }
 
+.file-card-image {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px;
+  max-width: 300px;
+}
+.file-card-image img {
+  width: 100%;
+  border-radius: 6px;
+  display: block;
+}
+.file-card-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.file-media video {
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: 8px;
+  background: #000;
+  display: block;
+}
+.file-media audio { width: 100%; }
+.file-media .file-card { margin-top: 6px; }
+
 .empty { color: var(--muted); text-align: center; padding: 24px 0; }
 
 .stats { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
@@ -187,14 +209,15 @@ input:focus { outline: 2px solid var(--accent); }
 .upload-queue { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; text-align: left; }
 .upload-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 10px;
   font-size: .85rem;
 }
+.upload-row { display: flex; align-items: center; gap: 8px; }
 .upload-item .upload-name {
   flex: 1;
   overflow: hidden;
@@ -205,6 +228,8 @@ input:focus { outline: 2px solid var(--accent); }
 .upload-item .upload-status { color: var(--muted); white-space: nowrap; }
 .upload-item.done .upload-status { color: var(--ok); }
 .upload-item.error .upload-status { color: var(--danger); }
+.upload-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.upload-bar-fill { height: 100%; background: var(--accent); transition: width .15s; }
 
 .toast-error {
   background: rgba(248, 113, 113, .12);

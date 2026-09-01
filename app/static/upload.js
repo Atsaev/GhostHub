@@ -70,11 +70,18 @@
     queueEl.innerHTML = files
       .map((item) => {
         const status = { waiting: "в очереди", uploading: "…", done: "✓", error: "ошибка" }[item.status];
+        const bar =
+          item.status === "uploading"
+            ? `<div class="upload-bar"><div class="upload-bar-fill" style="width:${item.progress}%"></div></div>`
+            : "";
         return `
           <div class="upload-item ${item.status}">
-            <span class="upload-name">${escapeHtml(item.file.name)}</span>
-            <span class="upload-size">${humanSize(item.file.size)}</span>
-            <span class="upload-status">${status}</span>
+            <div class="upload-row">
+              <span class="upload-name">${escapeHtml(item.file.name)}</span>
+              <span class="upload-size">${humanSize(item.file.size)}</span>
+              <span class="upload-status">${status}</span>
+            </div>
+            ${bar}
           </div>`;
       })
       .join("");

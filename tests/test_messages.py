@@ -65,6 +65,20 @@ def test_size_limit(client, monkeypatch):
     assert "превышает лимит" in response.text
 
 
+def test_image_preview(client):
+    room_path = _create_room(client)
+    response = client.post(
+        f"{room_path}/messages",
+        files={"file": ("photo.png", b"\x89PNG\r\n\x1a\n", "image/png")},
+        follow_redirects=False,
+    )
+    assert response.status_code == 204
+
+    page = client.get(room_path)
+    assert "file-card-image" in page.text
+    assert "<img" in page.text
+
+
 def test_qr_code(client):
     room_path = _create_room(client)
     response = client.get(f"{room_path}/qr.svg")

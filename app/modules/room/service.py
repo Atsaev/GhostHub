@@ -145,6 +145,7 @@ def message_view(message: Buffer, token: str) -> dict:
         "content": message.content,
         "file_name": message.file_name,
         "file_size_str": human_size(message.file_size) if message.file_size else "",
+        "preview": _preview_type(message.mime_type) if message.kind == "file" else "",
         "icon": device_icon(message.device_id),
         "color": device_color(message.device_id),
         "time_str": created.astimezone().strftime("%H:%M"),
@@ -152,6 +153,18 @@ def message_view(message: Buffer, token: str) -> dict:
             f"/rooms/{token}/files/{message.id}" if message.kind == "file" else ""
         ),
     }
+
+
+def _preview_type(mime_type: str | None) -> str:
+    if not mime_type:
+        return ""
+    if mime_type.startswith("image/"):
+        return "image"
+    if mime_type.startswith("video/"):
+        return "video"
+    if mime_type.startswith("audio/"):
+        return "audio"
+    return ""
 
 
 def storage_context(used: int) -> dict:
