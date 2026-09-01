@@ -1,5 +1,5 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -35,12 +35,6 @@ class Settings(BaseSettings):
 
     # абсолютный базовый url для ссылок и qr-кодов (если приложение за прокси)
     public_base_url: str = ""
-
-    # stun-серверы для webrtc p2p (несколько, на случай недоступности одного)
-    p2p_stun_urls: list[str] = [
-        "stun:stun.l.google.com:19302",
-        "stun:stun.cloudflare.com:3478",
-    ]
 
     model_config = SettingsConfigDict(
         env_file=".env",

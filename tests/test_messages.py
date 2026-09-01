@@ -79,43 +79,6 @@ def test_image_preview(client):
     assert "<img" in page.text
 
 
-def test_page_has_p2p_button_and_no_per_message_buttons(client):
-    room_path = _create_room(client)
-    client.post(
-        f"{room_path}/messages",
-        data={"content": "привет"},
-        files={"file": ("", b"", "text/plain")},
-        follow_redirects=False,
-    )
-    page = client.get(room_path).text
-    assert "data-send-to" not in page
-    assert 'id="p2p-btn"' in page
-    assert 'id="p2p-modal"' in page
-
-
-def test_devices_endpoint_lists_online_devices(client):
-    import asyncio
-
-    from app.core.hub import hub
-
-    response = client.post("/rooms", data={}, follow_redirects=False)
-    room_path = response.headers["location"]
-    token = room_path.rsplit("/", 1)[1]
-    client.get(room_path)
-
-    response = client.get(f"{room_path}/devices")
-    assert response.status_code == 200
-    assert response.json()["devices"] == []
-
-    foreign = "device-other-1234567890ab"
-    queue = asyncio.run(hub.subscribe(token, foreign))
-    try:
-        devices = client.get(f"{room_path}/devices").json()["devices"]
-        assert [d["id"] for d in devices] == [foreign]
-    finally:
-        asyncio.run(hub.unsubscribe(token, queue, foreign))
-
-
 def test_qr_code(client):
     room_path = _create_room(client)
     response = client.get(f"{room_path}/qr.svg")

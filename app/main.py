@@ -15,13 +15,10 @@ from app.modules.buffer.controller import (
 from app.modules.room.controller import (
     create_room_endpoint,
     index_endpoint,
-    room_devices,
     room_events,
     room_join,
     room_page,
     room_qr,
-    rtc_accept,
-    rtc_signal,
 )
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -40,9 +37,6 @@ app = Litestar(
         room_join,
         room_events,
         room_qr,
-        room_devices,
-        rtc_accept,
-        rtc_signal,
         room_messages_create,
         room_file_download,
     ],
