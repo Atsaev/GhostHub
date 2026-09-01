@@ -4,6 +4,37 @@ htmx.config.responseHandling.unshift(
   { code: "413", swap: true },
 );
 
+// markdown-рендер текстовых сообщений (без raw-html — защита от XSS)
+const md = window.markdownit
+  ? window.markdownit({
+      html: false,
+      linkify: true,
+      breaks: true,
+      highlight(code, lang) {
+        if (lang && window.hljs && hljs.getLanguage(lang)) {
+          try {
+            return hljs.highlight(code, { language: lang }).value;
+          } catch (e) {
+            /* fallback */
+          }
+        }
+        return "";
+      },
+    })
+  : null;
+
+function renderMarkdown(root) {
+  if (!md) return;
+  root.querySelectorAll(".msg-text.md").forEach((el) => {
+    if (el.dataset.mdRendered) return;
+    el.innerHTML = md.render(el.textContent);
+    el.dataset.mdRendered = "1";
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => renderMarkdown(document));
+document.addEventListener("htmx:afterSwap", (event) => renderMarkdown(event.detail.target || document));
+
 // копирование ссылки и показ qr-панели
 document.addEventListener("click", (event) => {
   const copyBtn = event.target.closest("[data-copy]");

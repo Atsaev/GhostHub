@@ -143,6 +143,17 @@ input:focus { outline: 2px solid var(--accent); }
   white-space: pre-wrap;
   word-break: break-word;
 }
+.msg-text pre {
+  overflow-x: auto;
+  background: #0d1117;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 6px 0;
+}
+.msg-text code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: .9em;
+}
 .file-card {
   display: flex; align-items: center; gap: 8px;
   background: var(--bg);
