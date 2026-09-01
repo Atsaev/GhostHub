@@ -4,8 +4,13 @@
 
   const token = rtcHook.dataset.token;
   const selfId = rtcHook.dataset.deviceId;
-  const stunUrl = rtcHook.dataset.stun;
   const base = rtcHook.dataset.base || "";
+  // список stun-серверов из data-stun (через запятую)
+  const stunServers = (rtcHook.dataset.stun || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((urls) => ({ urls }));
   const panel = document.getElementById("p2p-panel");
   const fileInput = document.getElementById("p2p-file");
   const modal = document.getElementById("rtc-modal");
@@ -13,7 +18,8 @@
 
   const CHUNK = 64 * 1024;
   const ACCEPT_TIMEOUT = 30000;
-  const CONNECT_TIMEOUT = 20000;
+  // 12 секунд на установку соединения, дальше — авто-fallback через сервер
+  const CONNECT_TIMEOUT = 12000;
 
   const peers = new Map(); // remote device_id -> peer
   const pendingIce = new Map(); // remote device_id -> [candidate, ...]
@@ -97,13 +103,10 @@
           return flushPendingIce(msg.from);
         })
         .then(() => {
-          // таймер открытия канала и у отправителя
+          // таймер открытия канала и у отправителя; при неудаче — авто-fallback
           peer.openTimer = setTimeout(() => {
             if (!peer.dc || peer.dc.readyState !== "open") {
-              finishPeer(
-                peer,
-                "Не удалось установить соединение (сеть или mDNS). Отправьте через сервер",
-              );
+              autoFallback(peer);
             }
           }, CONNECT_TIMEOUT);
         })
@@ -175,7 +178,7 @@
       fallbackUsed: false,
     };
     peers.set(from, peer);
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: stunUrl }] });
+    const pc = new RTCPeerConnection({ iceServers: stunServers });
     peer.pc = pc;
     pc.ondatachannel = (e) => {
       peer.dc = e.channel;
@@ -207,7 +210,7 @@
       if (!peer.dc || peer.dc.readyState !== "open") {
         finishPeer(
           peer,
-          "Не удалось установить соединение (сеть или mDNS). Отправьте через сервер",
+          "Не удалось установить соединение (сеть или mDNS)",
         );
       }
     }, CONNECT_TIMEOUT);
@@ -228,7 +231,7 @@
       showToast("Уже есть активная передача этому устройству");
       return;
     }
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: stunUrl }] });
+    const pc = new RTCPeerConnection({ iceServers: stunServers });
     const dc = pc.createDataChannel("ghosthub");
     const peer = {
       pc,
@@ -253,10 +256,7 @@
     pc.oniceconnectionstatechange = () => {
       console.log("[p2p] ice-состояние:", pc.iceConnectionState);
       if (pc.iceConnectionState === "failed") {
-        finishPeer(
-          peer,
-          "P2P-соединение не установлено (NAT/сети). Отправьте через сервер",
-        );
+        autoFallback(peer);
       }
     };
     pc.onicegatheringstatechange = () =>
@@ -372,6 +372,13 @@
   }
 
   // ---------- fallback через сервер ----------
+
+  // авто-fallback: если p2p не установился — отправляем файл через сервер
+  function autoFallback(peer) {
+    if (peer.finished || peer.fallbackUsed || peer.role !== "sender") return;
+    showToast("P2P-соединение не установлено — отправляю через сервер");
+    fallbackUpload(peer);
+  }
 
   function fallbackUpload(peer) {
     peer.status = "uploading";

@@ -47,7 +47,7 @@
       {% include "partials/stats.html" %}
     </div>
     <div hx-trigger="sse:expired" hx-on::sse:expired="window.location.reload()"></div>
-    <div id="rtc-hook" data-token="{{ token }}" data-device-id="{{ device_id }}" data-stun="{{ stun_url }}" data-base="{{ base_path }}"></div>
+    <div id="rtc-hook" data-token="{{ token }}" data-device-id="{{ device_id }}" data-stun="{{ stun_urls | join(',') }}" data-base="{{ base_path }}"></div>
   </div>
 
   <form id="composer" class="composer" hx-post="{{ base_path }}/rooms/{{ token }}/messages"

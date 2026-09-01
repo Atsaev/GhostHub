@@ -102,7 +102,7 @@ async def room_page(request: Request, public_token: FromPath[str]) -> Template:
                 "color": device_color(device_id),
             },
             "device_id": device_id,
-            "stun_url": settings.p2p_stun_url,
+            "stun_urls": settings.p2p_stun_urls,
             "ttl_minutes": max(
                 0,
                 int((room.expires_at - utc_now()).total_seconds() // 60),
