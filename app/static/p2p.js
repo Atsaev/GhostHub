@@ -18,8 +18,7 @@
 
   const CHUNK = 64 * 1024;
   const ACCEPT_TIMEOUT = 30000;
-  // 12 секунд на установку соединения, дальше — авто-fallback через сервер
-  const CONNECT_TIMEOUT = 12000;
+  const CONNECT_TIMEOUT = 20000;
 
   const peers = new Map(); // remote device_id -> peer
   const pendingIce = new Map(); // remote device_id -> [candidate, ...]
@@ -103,10 +102,13 @@
           return flushPendingIce(msg.from);
         })
         .then(() => {
-          // таймер открытия канала и у отправителя; при неудаче — авто-fallback
+          // таймер открытия канала и у отправителя
           peer.openTimer = setTimeout(() => {
             if (!peer.dc || peer.dc.readyState !== "open") {
-              autoFallback(peer);
+              finishPeer(
+                peer,
+                "Не удалось установить соединение (сеть или mDNS). Отправьте через сервер",
+              );
             }
           }, CONNECT_TIMEOUT);
         })
@@ -256,7 +258,10 @@
     pc.oniceconnectionstatechange = () => {
       console.log("[p2p] ice-состояние:", pc.iceConnectionState);
       if (pc.iceConnectionState === "failed") {
-        autoFallback(peer);
+        finishPeer(
+          peer,
+          "P2P-соединение не установлено (NAT/сети). Отправьте через сервер",
+        );
       }
     };
     pc.onicegatheringstatechange = () =>
@@ -372,13 +377,6 @@
   }
 
   // ---------- fallback через сервер ----------
-
-  // авто-fallback: если p2p не установился — отправляем файл через сервер
-  function autoFallback(peer) {
-    if (peer.finished || peer.fallbackUsed || peer.role !== "sender") return;
-    showToast("P2P-соединение не установлено — отправляю через сервер");
-    fallbackUpload(peer);
-  }
 
   function fallbackUpload(peer) {
     peer.status = "uploading";
