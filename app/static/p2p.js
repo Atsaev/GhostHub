@@ -15,6 +15,7 @@
   const CONNECT_TIMEOUT = 20000;
 
   const peers = new Map(); // remote device_id -> peer
+  const pendingIce = new Map(); // remote device_id -> [candidate, ...]
   let pendingOffer = null;
 
   function sendSignal(to, kind, data) {
@@ -90,12 +91,36 @@
       peer.awaitingAnswer = false;
       peer.pc
         .setRemoteDescription({ type: "answer", sdp: msg.data })
+        .then(() => {
+          peer.remoteSet = true;
+          return flushPendingIce(msg.from);
+        })
+        .then(() => {
+          // таймер открытия канала и у отправителя
+          peer.openTimer = setTimeout(() => {
+            if (!peer.dc || peer.dc.readyState !== "open") {
+              finishPeer(peer, "Не удалось установить соединение");
+            }
+          }, CONNECT_TIMEOUT);
+        })
         .catch(() => finishPeer(peer, "Ошибка соединения"));
     } else if (name === "rtc-ice") {
-      const peer = peers.get(msg.from);
-      if (!peer) return;
+      let candidate;
       try {
-        peer.pc.addIceCandidate(JSON.parse(msg.data));
+        candidate = JSON.parse(msg.data);
+      } catch (err) {
+        return;
+      }
+      const peer = peers.get(msg.from);
+      // кандидаты могут прийти раньше, чем мы создали peer / применили sdp
+      if (!peer || !peer.remoteSet) {
+        const list = pendingIce.get(msg.from) || [];
+        list.push(candidate);
+        pendingIce.set(msg.from, list);
+        return;
+      }
+      try {
+        peer.pc.addIceCandidate(candidate);
       } catch (err) {
         /* ignore */
       }
@@ -139,6 +164,7 @@
       chunks: [],
       received: 0,
       finished: false,
+      remoteSet: false,
     };
     peers.set(from, peer);
     const pc = new RTCPeerConnection({ iceServers: [{ urls: stunUrl }] });
@@ -152,6 +178,8 @@
     };
     try {
       await pc.setRemoteDescription({ type: "offer", sdp });
+      peer.remoteSet = true;
+      await flushPendingIce(from);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       await sendSignal(from, "answer", pc.localDescription.sdp);
@@ -193,6 +221,7 @@
       progress: 0,
       awaitingAnswer: true,
       finished: false,
+      remoteSet: false,
     };
     peers.set(remoteId, peer);
     pc.onicecandidate = (e) => {
@@ -200,6 +229,7 @@
     };
     dc.onopen = () => {
       console.log("[p2p] канал открыт с", remoteId.slice(0, 6));
+      clearTimeout(peer.openTimer);
       peer.status = "sending";
       renderPanel();
       sendFile(peer);
@@ -265,6 +295,12 @@
 
   function setupReceiverChannel(peer) {
     peer.dc.binaryType = "arraybuffer";
+    peer.dc.onopen = () => {
+      console.log("[p2p] канал открыт с", peer.remote.slice(0, 6));
+      clearTimeout(peer.openTimer);
+      peer.status = "receiving";
+      renderPanel();
+    };
     peer.dc.onmessage = (e) => {
       if (typeof e.data === "string") {
         const msg = JSON.parse(e.data);
@@ -399,6 +435,21 @@
         ${bar}
         ${fallback}
       </div>`;
+  }
+
+  // применяет отложенные ice-кандидаты после установки удалённого sdp
+  async function flushPendingIce(from) {
+    const peer = peers.get(from);
+    if (!peer || !peer.remoteSet) return;
+    const list = pendingIce.get(from) || [];
+    pendingIce.delete(from);
+    for (const candidate of list) {
+      try {
+        await peer.pc.addIceCandidate(candidate);
+      } catch (err) {
+        /* ignore */
+      }
+    }
   }
 
   function showToast(message) {
