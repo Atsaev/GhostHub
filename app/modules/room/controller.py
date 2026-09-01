@@ -1,3 +1,4 @@
+import asyncio
 import io
 import secrets
 from collections.abc import AsyncIterator
@@ -126,9 +127,15 @@ async def room_events(public_token: FromPath[str]) -> Stream:
     async def stream() -> AsyncIterator[str]:
         queue = await hub.subscribe(public_token)
         try:
+            yield "retry: 3000\n\n"
             yield ": connected\n\n"
             while True:
-                payload = await queue.get()
+                try:
+                    payload = await asyncio.wait_for(queue.get(), timeout=25)
+                except TimeoutError:
+                    # keep-alive пинг, чтобы соединение не закрывали прокси
+                    yield ": ping\n\n"
+                    continue
                 yield payload
         finally:
             await hub.unsubscribe(public_token, queue)
@@ -136,7 +143,10 @@ async def room_events(public_token: FromPath[str]) -> Stream:
     return Stream(
         stream(),
         media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache"},
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

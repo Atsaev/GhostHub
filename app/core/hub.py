@@ -25,7 +25,13 @@ class RoomHub:
                 self._subscribers.pop(room_token, None)
 
     async def publish(self, room_token: str, event: str, data: str) -> None:
-        payload = f"event: {event}\ndata: {data}\n\n"
+        """Отправляет событие всем подписчикам комнаты.
+
+        Многострочные данные разбиваются на отдельные строки ``data:``,
+        иначе браузер обрезает событие на первой новой строке.
+        """
+        data_lines = "\n".join(f"data: {line}" for line in data.split("\n"))
+        payload = f"event: {event}\n{data_lines}\n\n"
         async with self._lock:
             queues = list(self._subscribers.get(room_token, ()))
         for queue in queues:

@@ -4,13 +4,6 @@ htmx.config.responseHandling.unshift(
   { code: "413", swap: true },
 );
 
-// перезагрузка страницы, когда комната истекла (sse-событие "expired")
-document.addEventListener("htmx:sseMessage", (event) => {
-  if (event.detail.type === "expired") {
-    window.location.reload();
-  }
-});
-
 // копирование ссылки и показ qr-панели
 document.addEventListener("click", (event) => {
   const copyBtn = event.target.closest("[data-copy]");

@@ -46,6 +46,7 @@
     <div id="stats" class="stats" sse-swap="stats">
       {% include "partials/stats.html" %}
     </div>
+    <div hx-trigger="sse:expired" hx-on::sse:expired="window.location.reload()"></div>
   </div>
 
   <form id="composer" class="composer" hx-post="/rooms/{{ token }}/messages"
