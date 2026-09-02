@@ -19,9 +19,10 @@ from app.modules.room.models import Room
 
 async def create_room(public_token: str, password: str | None = None) -> Room:
     now = utc_now()
+    password_hash = await hash_password(password) if password else None
     room = Room(
         public_token=public_token,
-        password_hash=hash_password(password) if password else None,
+        password_hash=password_hash,
         created_at=now,
         expires_at=now + timedelta(seconds=settings.room_ttl_seconds),
     )
@@ -57,7 +58,7 @@ async def delete_room(room_id: UUID) -> None:
         await session.execute(delete(Buffer).where(Buffer.room_id == room_id))
         await session.execute(delete(Room).where(Room.id == room_id))
         await session.commit()
-    delete_room_files(room_id)
+    await delete_room_files(room_id)
 
 
 async def cleanup_expired_rooms() -> list[str]:

@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import hmac
 import secrets
@@ -8,14 +9,23 @@ _ALGORITHM = "pbkdf2_sha256"
 _ITERATIONS = 100_000
 
 
-def hash_password(password: str) -> str:
-    """Хеширует пароль комнаты (pbkdf2 + случайная соль)."""
+async def hash_password(password: str) -> str:
+    """Хеширует пароль комнаты (pbkdf2) вне event loop."""
+    return await asyncio.to_thread(_hash_password_sync, password)
+
+
+def _hash_password_sync(password: str) -> str:
     salt = secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, _ITERATIONS)
     return f"{_ALGORITHM}${_ITERATIONS}${salt.hex()}${digest.hex()}"
 
 
-def verify_password(password: str, stored_hash: str) -> bool:
+async def verify_password(password: str, stored_hash: str) -> bool:
+    """Проверяет пароль комнаты (pbkdf2) вне event loop."""
+    return await asyncio.to_thread(_verify_password_sync, password, stored_hash)
+
+
+def _verify_password_sync(password: str, stored_hash: str) -> bool:
     try:
         _algorithm, iterations, salt_hex, digest_hex = stored_hash.split("$")
         digest = hashlib.pbkdf2_hmac(

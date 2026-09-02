@@ -110,7 +110,8 @@ async def room_join(
         return _room_template(request, public_token, {"expired": True})
     if room.password_hash is None:
         return Redirect(f"{settings.base_path}/rooms/{public_token}", status_code=303)
-    if not verify_password(data.password, room.password_hash):
+    password_ok = await verify_password(data.password, room.password_hash)
+    if not password_ok:
         if not join_attempt_limiter.allow(_client_ip(request)):
             context = {
                 "room": room,
