@@ -2,7 +2,7 @@ import os
 import tempfile
 
 _TMP = tempfile.mkdtemp(prefix="ghosthub_tests_")
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://localhost:5432/ghubhub_test")
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://localhost:5432/ghosthub_test")
 os.environ.setdefault("DB_POOL", "false")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 os.environ.setdefault("STORAGE_PATH", f"{_TMP}/storage")

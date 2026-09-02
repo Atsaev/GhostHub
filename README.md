@@ -83,11 +83,11 @@ PUBLIC_BASE_URL=https://example.com/ghost
 Тесты работают с PostgreSQL. Создайте тестовую БД и запустите:
 
 ```bash
-createdb ghubhub_test
+createdb ghosthub_test
 uv run pytest
 ```
 
-Тесты используют отдельную базу данных (`ghubhub_test` или свой `DATABASE_URL`)
+Тесты используют отдельную базу данных (`ghosthub_test` или свой `DATABASE_URL`)
 и временный каталог хранилища, не затрагивая рабочее окружение.
 
 ## Структура

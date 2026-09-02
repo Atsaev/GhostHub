@@ -7,6 +7,7 @@ from litestar.static_files import create_static_files_router
 from litestar.template import TemplateConfig
 
 from app.common.templating import template_engine
+from app.core.config import settings
 from app.core.tasks import start_cleanup_task, stop_cleanup_task
 from app.modules.buffer.controller import (
     room_file_download,
@@ -41,6 +42,8 @@ app = Litestar(
         room_file_download,
     ],
     template_config=TemplateConfig(engine=cast(Any, template_engine)),
+    # потолок тела HTTP-запроса = вместимость комнаты (см. config.room_max_bytes)
+    request_max_body_size=settings.room_max_bytes,
     on_startup=[start_cleanup_task],
     on_shutdown=[stop_cleanup_task],
 )
