@@ -5,6 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "GhostHub"
     debug: bool = False
+    # пул соединений; отключается (NullPool) в тестах, где event loop
+    # pytest и TestClient разные
+    db_pool: bool = True
     base_path: str = ""
     database_url: str
 

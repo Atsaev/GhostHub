@@ -6,12 +6,10 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
-DATABASE_URL = settings.database_url
-
-# для sqlite каждый сеанс открывает своё соединение,
-# чтобы не было проблем с привязкой соединений к event loop
 engine: AsyncEngine = create_async_engine(
-    DATABASE_URL,
+    settings.database_url,
     echo=settings.debug,
-    poolclass=NullPool if DATABASE_URL.startswith("sqlite") else None,
+    # NullPool в тестах: соединения не должны переживать между event loop
+    # pytest и TestClient (иначе asyncpg бросает InterfaceError)
+    poolclass=NullPool if not settings.db_pool else None,
 )
